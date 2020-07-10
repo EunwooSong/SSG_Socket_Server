@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 interface Auth {
@@ -26,7 +26,7 @@ if (env === 'development') {
   mongoose.set('debug', true);
 }
 
-export default (): Promise<typeof mongoose> =>
+module.exports =  (): Promise<typeof mongoose> =>
   mongoose.connect(mongoURL, {
     ...auth,
     dbName,
