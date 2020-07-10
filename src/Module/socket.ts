@@ -190,7 +190,7 @@ function socket(io) {
 
         console.log(room_id + " / " + _nick + " audo leave room . . .");
 
-        LeaveRoom(room_id, _nick, _master);
+        // LeaveRoom(room_id, _nick, _master);
       });
     });
 
