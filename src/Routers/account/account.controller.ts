@@ -43,14 +43,18 @@ export const Signup = (req: Request, res: Response) => {
 };
 export const Signin = (req: Request, res: Response) => {
   const { id, password } = req.body;
+  console.log("signin")
   if (!(id || password)) {
     Send(res, 200, "Please fill in all input fields.", false);
   }
   User.findOne({ id: id }, function(err, result) {
     if (err) throw err;
+    console.log(result);
     if (result != null) {
+      bcrypt.hash(password, null, null, (a, hash) => { console.log('hash', hash) });
       // 만약 계정이 있을 때
       bcrypt.compare(password, result.password, function(err, value) {
+        console.log(value)
         if (value == true) {
           //비밀번호O
           console.log("SignIn IP / NICKNAME : " + 

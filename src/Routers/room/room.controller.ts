@@ -4,27 +4,42 @@ import Send from "../../Module/Send";
 import roomDB from "../../Module/roomDB";
 
 export const Create = (req: Request, res: Response) => {
-  const { roomname, nickname, userdata, password, personnel, ip } = req.body;
-  const random: string = shortid.generate();
-  //이 사이에는 방 인원수 제한등등을 구현
-  roomDB.push({
-    _id: random,
-    roomname,
-    personnel,
-    connectedUsers: 1,
-    passwordLock: password ? true : false,
-    password,
-    progress: false,
-    player: [
-      {
-        nickname,
-        master: true,
-        score: 0,
-        ip : ip
-      }
-    ]
-  });
-  Send(res, 200, random, true);
+  const { _id, roomname, nickname, userdata, password, personnel, ip } = req.body;
+
+  if(roomDB.searchAll().length > 1){
+    const join = roomDB.join({
+      _id,
+      password,
+      nickname,
+      userdata,
+      ip
+    });
+  
+    console.log(join);
+  
+    Send(res, 200, join, join == "성공적으로 방에 입장하셨습니다" ? true : false);
+  } else {
+    const random: string = shortid.generate();
+    //이 사이에는 방 인원수 제한등등을 구현
+    roomDB.push({
+      _id: random,
+      roomname,
+      personnel,
+      connectedUsers: 1,
+      passwordLock: password ? true : false,
+      password,
+      progress: false,
+      player: [
+        {
+          nickname,
+          master: true,
+          score: 0,
+          ip : ip
+        }
+      ]
+    });
+    Send(res, 200, random, true);
+  }
 };
 
 export const Join = (req: Request, res: Response) => {
@@ -36,6 +51,9 @@ export const Join = (req: Request, res: Response) => {
     userdata,
     ip
   });
+
+  console.log(join);
+
   Send(res, 200, join, join == "성공적으로 방에 입장하셨습니다" ? true : false);
 };
 
