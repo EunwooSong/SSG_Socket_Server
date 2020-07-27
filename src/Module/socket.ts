@@ -10,11 +10,13 @@ function socket(io) {
       socket.emit("sendClient", data);
     });
 
-    socket.on("Join", _id => {
-      socket.join(_id);
+    socket.on("Join", (data) => {
+
+      // Join part
+      socket.join(data._id);
       let rooms = roomDB.searchAll();
-      let room = rooms.filter(value => value._id == _id);
-      io.sockets.in(_id).emit("RoomLoad", room[0]);
+      let room = rooms.filter(value => value._id == data._id);
+      io.sockets.in(data._id).emit("RoomLoad", room[0]);
       var MainLoad = [];
       roomDB.searchAll().forEach((data, index) => {
         MainLoad[index] = {
@@ -26,7 +28,57 @@ function socket(io) {
           progress: data.progress
         };
       });
+
+      // main Game Start
+      var playersSpawn: Array<any> = [];
+      //방 정보를 찾음
+      console.log("GameStart",data)
+      roomDB.searchAll().forEach((v) => {
+        if(v._id == data) {
+          //방에 있는 플레이어를 찾음
+          v.player.forEach((p, index) => {
+            //플레이어가 가지고 있는 type을 찾음
+            User.findOne({nickname : p.nickname}, function(error, result) {
+              if(error) throw error;
+              playersSpawn[index] = {
+                nickname : p.nickname,
+                spawnPoint : index,
+                type : result.userdata
+              };
+
+              console.log("Create Player " + playersSpawn);
+              io.sockets.in(data).emit("CreatePlayers", {value : playersSpawn[index]});
+            });
+          });
+        }
+      });
+
       socket.emit("sendMainRoom", MainLoad[0]);
+    });
+
+    socket.on("GameStart", (data) => {
+      var playersSpawn: Array<any> = [];
+      //방 정보를 찾음
+      console.log("GameStart",data)
+      roomDB.searchAll().forEach((v) => {
+        if(v._id == data) {
+          //방에 있는 플레이어를 찾음
+          v.player.forEach((p, index) => {
+            //플레이어가 가지고 있는 type을 찾음
+            User.findOne({nickname : p.nickname}, function(error, result) {
+              if(error) throw error;
+              playersSpawn[index] = {
+                nickname : p.nickname,
+                spawnPoint : index,
+                type : result.userdata
+              };
+
+              console.log("Create Player " + playersSpawn);
+              io.sockets.in(data).emit("CreatePlayers", {value : playersSpawn[index]});
+            });
+          });
+        }
+      });
     });
 
     socket.on("MainLoad", data => {
@@ -54,6 +106,11 @@ function socket(io) {
     socket.on("RoomLeave", data => {
       var _d = JSON.parse(data);
       LeaveRoom(_d.id, _d.nickname, _d.master);
+    });
+
+    socket.on("LeavePlayer", (data) => {
+      var _d = JSON.parse(data);
+      io.sockets.in(_d._id).emit("LeavePlayers", data);
     });
 
     //Old Ver
@@ -91,30 +148,6 @@ function socket(io) {
 
     //GameStart
     //client -> data(Room ID) / server -> Users Spawn Point
-    socket.on("GameStart", (data) => {
-      var playersSpawn: Array<any> = [];
-      //방 정보를 찾음
-      console.log("GameStart",data)
-      roomDB.searchAll().forEach((v) => {
-        if(v._id == data) {
-          //방에 있는 플레이어를 찾음
-          v.player.forEach((p, index) => {
-            //플레이어가 가지고 있는 type을 찾음
-            User.findOne({nickname : p.nickname}, function(error, result) {
-              if(error) throw error;
-              playersSpawn[index] = {
-                nickname : p.nickname,
-                spawnPoint : index,
-                type : result.userdata
-              };
-
-              console.log("Create Player " + playersSpawn);
-              io.sockets.in(data).emit("CreatePlayers", {value : playersSpawn[index]});
-            });
-          });
-        }
-      });
-    });
 
     //PlayerState
     socket.on("PlayerState", (data) => {

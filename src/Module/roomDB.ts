@@ -1,7 +1,6 @@
 import * as lowdb from "lowdb";
 import * as FileSync from "lowdb/adapters/FileSync";
 import * as fs from "fs";
-import { reverse } from "dns";
 
 fs.unlink("Room.json", function(err) {
   if (err) throw err;

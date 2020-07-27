@@ -2,6 +2,7 @@ import * as shortid from "shortid";
 import { Request, Response } from "express";
 import Send from "../../Module/Send";
 import roomDB from "../../Module/roomDB";
+
 export const Create = (req: Request, res: Response) => {
   const { roomname, nickname, userdata, password, personnel, ip } = req.body;
   const random: string = shortid.generate();
@@ -25,6 +26,7 @@ export const Create = (req: Request, res: Response) => {
   });
   Send(res, 200, random, true);
 };
+
 export const Join = (req: Request, res: Response) => {
   const { _id, password, nickname, userdata, ip } = req.body;
   const join = roomDB.join({
@@ -36,6 +38,7 @@ export const Join = (req: Request, res: Response) => {
   });
   Send(res, 200, join, join == "성공적으로 방에 입장하셨습니다" ? true : false);
 };
+
 export const Leave = (req: Request, res: Response) => {
   const { _id, nickname, master } = req.body;
   const leaveMes = roomDB.leave({ _id, nickname, master });
