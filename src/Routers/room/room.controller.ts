@@ -61,8 +61,9 @@ export const Join = (req: Request, res: Response) => {
   // Send(res, 200, join, join == "성공적으로 방에 입장하셨습니다" ? true : false);
 
   if(roomDB.searchAll().length > 0){
+    const roomId = roomDB.searchAll()[0]._id;
     const join = roomDB.join({
-      _id,
+      roomId,
       password,
       nickname,
       userdata,
@@ -92,7 +93,8 @@ export const Join = (req: Request, res: Response) => {
         }
       ]
     });
-    Send(res, 200, random, true);
+    
+    res.status(200).send({ roomId: random , result: true}).end();
   }
 };
 
