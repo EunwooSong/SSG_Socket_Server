@@ -6,7 +6,9 @@ import roomDB from "../../Module/roomDB";
 export const Create = (req: Request, res: Response) => {
   const { _id, roomname, nickname, userdata, password, personnel, ip } = req.body;
 
-  if(roomDB.searchAll().length > 1){
+  console.log('req.body', req.body);
+
+  if(roomDB.searchAll().length > 0){
     const join = roomDB.join({
       _id,
       password,
