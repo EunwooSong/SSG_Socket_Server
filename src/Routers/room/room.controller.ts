@@ -63,7 +63,7 @@ export const Join = (req: Request, res: Response) => {
   if(roomDB.searchAll().length > 0){
     const roomId = roomDB.searchAll()[0]._id;
     const join = roomDB.join({
-      roomId,
+      _id: roomId,
       password,
       nickname,
       userdata,
@@ -93,7 +93,7 @@ export const Join = (req: Request, res: Response) => {
         }
       ]
     });
-    
+
     res.status(200).send({ roomId: random , result: true}).end();
   }
 };
