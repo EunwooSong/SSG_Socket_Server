@@ -28,8 +28,6 @@ if (env === 'development') {
 
 module.exports =  (): Promise<typeof mongoose> =>
   mongoose.connect(mongoURL, {
-    ...auth,
-    dbName,
     useNewUrlParser: true,
     useUnifiedTopology: true,
     useFindAndModify: false,
