@@ -46,6 +46,8 @@ export const Create = (req: Request, res: Response) => {
 
 export const Join = (req: Request, res: Response) => {
   const { _id, password, nickname, userdata, ip } = req.body;
+  console.log('req.body', req.body);
+  
   const join = roomDB.join({
     _id,
     password,
