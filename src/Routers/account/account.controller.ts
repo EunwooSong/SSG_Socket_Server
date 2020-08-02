@@ -53,10 +53,6 @@ export const Signin = (req: Request, res: Response) => {
       bcrypt.compare(password, result.password, function(err, value) {
         if (value == true) {
           //비밀번호O
-          console.log("SignIn IP / NICKNAME : " + 
-            req.connection.remoteAddress
-             + " / "+ result.nickname);
-          
           Send(
             res,
             200,
@@ -76,12 +72,15 @@ export const Signin = (req: Request, res: Response) => {
   });
 };
 
-export const PlayerType = (req: Request, res : Response) => {
+export const Custom = (req: Request, res : Response) => {
   const {id, type} = req.body;
   if (!(id || type)) {
     Send(res, 200, "Client Data is missing.", false);
   }
 
-  User.update( {id : id}, {$set : {type : type}});
-  Send(res, 200, "User Type Change Successed.", true);
-}
+  //User.findOneAndUpdate({id:id}, {$set : {userdata : {type : type}}})
+  User.update({id : id}, {$set : {userdata : {type : type}}})
+  .then(data => {
+    Send(res, 200, "User Type Change Successed.", true);
+  });
+} 

@@ -1,10 +1,10 @@
 import * as express from "express"
-import { Signin,Signup,PlayerType } from "./account.controller";
+import { Signin,Signup,Custom } from "./account.controller";
 
 const router = express.Router();
 
 router.post("/signin", Signin);
 router.post("/signup",Signup);
-router.post("/playerType", PlayerType);
+router.post("/custom", Custom);
 
 export default router

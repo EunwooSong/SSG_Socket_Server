@@ -1,8 +1,9 @@
 import roomDB from "./roomDB";
 import User from "../Model/account";
 import { disconnect } from "cluster";
-import { debuglog } from "util";
+import { debuglog, isObject } from "util";
 import { json } from "express";
+import { debug } from "console";
 function socket(io) {
   io.sockets.on("connection", socket => {
     console.log("socket 서버 접속 완료 ");
@@ -46,8 +47,8 @@ function socket(io) {
 
     socket.on("sendMessage", data => {
       var tmp = JSON.parse(data);
-      console.log(tmp);
-      console.log(tmp.id);
+      //console.log(tmp);
+      //console.log(tmp.id);
       io.sockets.in(tmp.id).emit("getMessage", data);
     });
 
@@ -108,12 +109,27 @@ function socket(io) {
                 type : result.userdata
               };
 
-              console.log("Create Player " + playersSpawn);
+              //console.log("Create Player " + playersSpawn);
               io.sockets.in(data).emit("CreatePlayers", {value : playersSpawn[index]});
             });
           });
         }
       });
+
+      //GameTimer
+      let timerId = setInterval((data) => {
+        const timer = roomDB.updatetimer(data);
+        if(timer.result) {
+          if(timer.maximumTime != 0) {
+            io.sockets.in(data).emit("GameOver", roomDB.getScore({_id : data}));
+            roomDB.gameover(data);
+          }
+          clearInterval(timerId);
+        }
+        else {
+          io.sockets.in(data).emit("CurrentGameTimer", {_id : data, timer : timer.maximumTime - timer.currentTime});
+        }
+      }, 1000, data);
     });
 
     //PlayerState
@@ -125,7 +141,6 @@ function socket(io) {
     //CreateBullet
     socket.on("CreateBullet", (data) => {
       var _d = JSON.parse(data);
-      console.log(_d.bulletID);
       io.sockets.in(_d._id).emit("CreatedBullet", data);
     });
 
@@ -138,9 +153,10 @@ function socket(io) {
     //DeathPlayer
     socket.on("DeathPlayer", (data) => {
       var _d = JSON.parse(data);
+
       var score;
       //스코어 처리
-      if(!(_d.who === _d.whoKill))
+      if(!(_d.who == _d.whoKill))
          score = roomDB.score(_d);
       else
         score = roomDB.getScore(_d);
@@ -149,25 +165,36 @@ function socket(io) {
         _id : _d._id,
         who : _d.who,
         spawnPoint : Math.floor(Math.random() * (4 - 1)) + 1,
-        score : score 
+        score : score.score
       };
 
+      //작동 검사
+      //console.log(send);
+
       //게임 종료시 최종 스코어 전송
-      if(Check_GameOver(send))
-        io.sockets.in(send._id).emit("GameOver", score);
+      if(score.result) {
+        io.sockets.in(send._id).emit("GameOver", score.score);
+        roomDB.gameover(send._id);
+      }
+        
       else
         io.sockets.in(send._id).emit("DeathPlayers", send);
     });
 
-    //Timer
-    socket.on("GameTimer", (data) => {
+    socket.on("LeavePlayer", (data) => {
       var _d = JSON.parse(data);
-
-      if(Check_GameOver(_d))
-        io.sockets.in(_d._id).emit("GameOver", roomDB.getScore(_d._id));
-      else
-        io.sockets.in(_d._id).emit("CurrentGameTimer", data);
+      io.sockets.in(_d._id).emit("LeavePlayers", data);
     });
+
+    //Timer
+    // socket.on("GameTimer", (data) => {
+    //   var _d = JSON.parse(data);
+
+    //   if(Check_GameOver(_d))
+    //     io.sockets.in(_d._id).emit("GameOver", roomDB.getScore(_d._id));
+    //   else
+    //     io.sockets.in(_d._id).emit("CurrentGameTimer", data);
+    // });
 
     socket.on("disconnect", data => {
       var _ip = socket.handshake.address;
@@ -179,7 +206,7 @@ function socket(io) {
       console.log("Socket Disconnected / " + _ip);
       roomDB.searchAll().forEach((value) => {
         console.log(value._id);
-
+        
         value.player.forEach(p => {
           if(p.ip == _ip) {
             room_id = value._id;
@@ -188,15 +215,17 @@ function socket(io) {
           }
         });
 
-        console.log(room_id + " / " + _nick + " audo leave room . . .");
+        console.log(room_id + " / " + _nick + " auto leave room . . .");
 
-        // LeaveRoom(room_id, _nick, _master);
+        LeaveRoom(room_id, _nick, _master);
       });
     });
 
     function LeaveRoom(_id, _nick, _master) {
       roomDB.leave({_id:_id, nickname : _nick, master : _master});
 
+      io.sockets.in(_id).emit("LeavePlayers", {_id : _id, id : _id, nickname : _nick});
+      
       io.sockets.in(_id).emit("getLeaveMessage", _nick);
           socket.leave(_id);
           const room = roomDB
@@ -229,26 +258,19 @@ function Check_GameOver(data) {
   //Check Score
   if(data.score) {
     var score = data.score;
+
+    const maximumScore = roomDB.searchAll()
+    .filter(value => value._id == data._id).maximumScore;
+    
+    console.log(maximumScore);
+
     for(var i = 0; i < score.length; i++) {
-      if(score[i].score >= 5) {
+      if(score[i].score >= maximumScore) {
         console.log("GameOver / " + data + " / Max Score");
         return true;
       }
     }
-
     return false; 
-  }
-
-  //Check Time
-  if(data.timer) {
-    if(data.timer <= 0) {
-      console.log("GameOver / " + data + " / Time Over");
-      return true;
-    }
-    else {
-      //console.log(data);
-      return false;
-    }
   }
 
   //Data Error

@@ -2,6 +2,8 @@ import * as lowdb from "lowdb";
 import * as FileSync from "lowdb/adapters/FileSync";
 import * as fs from "fs";
 import { reverse } from "dns";
+import { create } from "domain";
+import { debug } from "console";
 
 fs.unlink("Room.json", function(err) {
   if (err) throw err;
@@ -26,6 +28,9 @@ function leave(data) {
   const Room = Roomdb.get("RoomData")
     .find({ _id: data._id })
     .value();
+  if(!Room) {
+    return "This room is already disposed";
+  }
   const player = Room.player;
   if (player.length != 1 && data.master == true) {
     player[1].master = true;
@@ -44,13 +49,30 @@ function leave(data) {
     .find({ _id: data._id })
     .assign({ player: UpdatePlayer })
     .write();
-  return "방을 성공적으로 나갔습니다";
+  return "Successfully left the room.";
 }
 
 function start(data) {
+  const Room = Roomdb.get("RoomData")
+    .find({ _id: data._id })
+    .value();
+    
+    Room.player.forEach(element => {
+      element.score = 0;
+    });
+
+    Roomdb.get("RoomData")
+      .find({_id:data._id})
+      .assign({progress : true, player : Room.player, currentTime : 0})
+      .write();
+
+    //console.log(Roomdb.get("RoomData").find({_id:data._id}).value());
+}
+
+function gameover(data) {
   Roomdb.get("RoomData")
     .find({ _id: data._id })
-    .assign({ progress: true })
+    .assign({ progress: false })
     .write();
 }
 
@@ -71,12 +93,19 @@ function score(data) {
     .find({ _id: data._id })
     .assign({ player: Room.player })
     .write();
-  const playerscore = [];
+  var playerscore = [];
 
   RoomP.forEach(data => {
     playerscore.push({ score: data.score, nickname: data.nickname });
   });
-  return playerscore.reverse();
+  playerscore = sortByKey(playerscore, "score");;
+
+  var result = false;
+  if(playerscore[0].score >= Room.maximumScore) {
+    result = true;
+  }
+
+  return {result : result, score : playerscore};
 }
 
 function getScore(data) {
@@ -92,8 +121,8 @@ function getScore(data) {
   roomPlayer.forEach(_d => {
     score.push({score : _d.score, nickname : _d.nickname});
   });
-
-  return score.reverse();
+  score = sortByKey(score, "score");
+  return {result : false, score : score};
 }
 
 function join(data) {
@@ -101,18 +130,23 @@ function join(data) {
     .find({ _id: data._id })
     .value();
   if (!Room) {
-    return "해당 방이 없습니다";
+    return "This room does not exist.";
   }
   if (Room.password != data.password) {
-    return "비밀번호가 틀립니다";
+    return "Wrong password";
+  }
+  if (Room.connectedUsers + 1 > 4) {
+    return "Room is already full";
   }
   const player = Room.player;
+  
   player.push({
     nickname: data.nickname,
     master: false,
     score: 0,
     ip:data.ip
   });
+  
   const people = Room.connectedUsers + 1;
   Roomdb.get("RoomData")
     .find({ _id: data._id })
@@ -122,7 +156,8 @@ function join(data) {
     .find({ _id: data._id })
     .assign({ player: player })
     .write();
-  return "성공적으로 방에 입장하셨습니다";
+
+  return "Successfully entered the room.";
 }
 
 function password(data) {
@@ -150,6 +185,42 @@ function password(data) {
   //진행중을 바꿔야됨
   return password;
 }
+
+function roomset(data) {
+  Roomdb.get("RoomData")
+    .find({_id: data._id})
+    .assign({maximumTime : data.maximumTime, maximumScore : data.maximumScore})
+    .write();
+}
+
+function updatetimer(data) {
+  const Room = Roomdb.get("RoomData").find({_id : data}).value();
+
+  if(Room) {
+    const updateTime = Room.currentTime + 1;
+
+    Roomdb.get("RoomData")
+      .find({_id : data})
+      .assign({currentTime : updateTime})
+      .write();
+  
+    const result = updateTime >= Room.maximumTime;
+    return {result : result, currentTime : updateTime, maximumTime : Room.maximumTime}
+  }
+
+  else {
+    return {result : true, currentTime : 0, maximumTime : 0}
+  }
+}
+
+function sortByKey(array, key){
+  array.sort(function(a, b){
+      return a[key] > b[key] ? -1 : a[key] < b[key] ? 1 : 0;
+  })
+
+  return array;
+}
+
 export default {
   setting,
   push,
@@ -157,7 +228,10 @@ export default {
   searchAll,
   leave,
   start,
+  gameover,
   score,
   getScore,
-  password
+  password,
+  roomset,
+  updatetimer
 };
