@@ -101,9 +101,7 @@ function score(data) {
   playerscore = sortByKey(playerscore, "score");;
 
   var result = false;
-  if(playerscore[0].score >= Room.maximumScore) {
-    result = true;
-  }
+  playerscore.forEach()
 
   return {result : result, score : playerscore};
 }
