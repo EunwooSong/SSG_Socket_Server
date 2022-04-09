@@ -33,7 +33,7 @@
     "http": "^0.0.0",
     "jsonwebtoken": "^8.5.1",
     "lowdb": "^1.0.0",
-    "moment": "^2.27.0",
+    "moment": "^2.29.2",
     "mongodb": "^3.5.9",
     "mongoose": "^5.9.24",
     "morgan": "^1.10.0",
